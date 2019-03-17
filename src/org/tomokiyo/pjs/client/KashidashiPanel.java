@@ -6,6 +6,8 @@ import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.*;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.logging.Logger;
@@ -16,59 +18,64 @@ import java.util.logging.Logger;
  * @author Takashi Tomokiyo (tomokiyo@gmail.com)
  */
 public class KashidashiPanel extends Composite implements LibraryManager.AbstractTabComponent {
-  private static Logger logger = Logger.getLogger(KashidashiPanel.class.getName());  
+  private static Logger logger = Logger.getLogger(KashidashiPanel.class.getName());
 
   static {
     Resources.INSTANCE.css().ensureInjected();
   }
 
   static public final String SUBMIT_CODE = "<<Submit>>";
+
   static public final String CANCEL_CODE = "<<Cancel>>";
-  
+
   // Note: the following is difficult to use properly due to the focus issues.
   // static public final String CHECKOUT_MODE_CODE = "<<Check Out>>";
   // static public final String RETURN_MODE_CODE = "<<Return>>";
 
   static private final String MSG0 = "図書バーコードもしくは利用者バーコードを入力してください。";
+
   static private final String MSG1 = "図書バーコードを入力してください。";
 
   private final Label topLabel = new Label(MSG0);
+
   private final PersonInfoPanel personInfo = new PersonInfoPanel();
+
   private final TextBox inputBox = new TextBox();
-  private final SimpleTable bookTable = new SimpleTable(new String[] {"図書番号", "題名", "著者", "出版社"});
-  
+
+  private final SimpleTable bookTable = new SimpleTable(new String[] { "図書番号", "題名", "著者", "出版社" });
+
+  private final SimpleTable bookRecordTable = new SimpleTable(
+          new String[] { "利用者番号", "分類", "氏名", "図書番号", "題名", "貸出日" });
+
   // Cancel Button.
-  private final Button cancelButton = new Button("Cancel",
-      new ClickListener() {
-        public void onClick(Widget sender) {
-          KashidashiPanel.this.reset();
-        }
-      });
-  
+  private final Button cancelButton = new Button("Cancel", new ClickListener() {
+    public void onClick(Widget sender) {
+      KashidashiPanel.this.reset();
+    }
+  });
+
   // Submit Button.
-  private final Button submitButton = new Button("Submit",
-      new ClickListener() {
-        public void onClick(Widget sender) {
-          KashidashiPanel.this.doSubmit();
-        }
-      });
-  
+  private final Button submitButton = new Button("Submit", new ClickListener() {
+    public void onClick(Widget sender) {
+      KashidashiPanel.this.doSubmit();
+    }
+  });
+
   // Model (TODO: use MVC or MVP model for bookRecordList)
   // Note: PersonRecord is stored in PersonInfoPanel.
   private final ArrayList<BookRecord> bookRecordList = new ArrayList<BookRecord>();
-  
+
   public KashidashiPanel() {
-    final VerticalPanel contentPanel = new VerticalPanel();
-    final FocusPanel focusPanel = new FocusPanel(contentPanel);
-    initWidget(focusPanel);
-    
     final HorizontalPanel topHorizontalPanel = new HorizontalPanel();
     topHorizontalPanel.setHorizontalAlignment(HasHorizontalAlignment.ALIGN_RIGHT);
     topHorizontalPanel.setWidth("100%");
     topHorizontalPanel.add(submitButton);
     topHorizontalPanel.add(cancelButton);
     topHorizontalPanel.setCellWidth(submitButton, "100%");
-    
+
+    final VerticalPanel contentPanel = new VerticalPanel();
+    final FocusPanel focusPanel = new FocusPanel(contentPanel);
+    initWidget(focusPanel);
     contentPanel.setHorizontalAlignment(DockPanel.ALIGN_CENTER);
     contentPanel.setHeight("100%");
     contentPanel.setWidth("100%");
@@ -78,9 +85,12 @@ public class KashidashiPanel extends Composite implements LibraryManager.Abstrac
     contentPanel.add(personInfo);
     contentPanel.setSpacing(10);
     contentPanel.add(bookTable);
-    
+    contentPanel.setSpacing(10);
+    contentPanel.add(bookRecordTable);
+
     contentPanel.setCellHeight(bookTable, "100%");
-    
+    contentPanel.setCellHeight(bookRecordTable, "100%");
+
 //     // for diagnostic purpose.
 //     focusPanel.addFocusListener(new FocusListenerAdapter() {
 //         public void onFocus(Widget sender) {
@@ -98,20 +108,21 @@ public class KashidashiPanel extends Composite implements LibraryManager.Abstrac
 //           System.out.println("key pressed: "+keyCode);
 //         }
 //       });
-    
+
     inputBox.setHeight("100%");
     inputBox.addChangeListener(new MyChangeListener());
     inputBox.addStyleName(Resources.INSTANCE.css().imeDisabled());
-    
+
     // You can use the CellFormatter to affect the layout of the grid's cells.
     // g.getCellFormatter().setWidth(0, 2, "256px");
-    
+
 //     foo.addClickListener(new ClickListener() {
 //         public void onClick(Widget sender) {
 //           inputBox.setFocus(true);
 //         }
 //       });
   }
+
 //     protected void onAttach() {
 //       super.onAttach();
 //       System.out.println("KashidashiPanel::onAttach called");
@@ -131,19 +142,22 @@ public class KashidashiPanel extends Composite implements LibraryManager.Abstrac
   // my API for tab member
   public void onTabSelected() {
     Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
-        public void execute() {
-          inputBox.setFocus(true);
-        }
-      });
+      public void execute() {
+        inputBox.setFocus(true);
+      }
+    });
   }
+
   private final void reset() {
     personInfo.reset();
     bookTable.clear();
+    bookRecordTable.clear();
     bookRecordList.clear();
     topLabel.setText(MSG0);
     inputBox.setText("");
     inputBox.setFocus(true);
   }
+
   private final void doSubmit() {
     // Check the precondition.
     if (personInfo.getRecord() == null) {
@@ -158,36 +172,40 @@ public class KashidashiPanel extends Composite implements LibraryManager.Abstrac
     }
     // Create Command to notify a set of already-checked books for the RPC calls.
     final HashSet<String> alreadyCheckedBookIds = new HashSet<String>();
-    final CountDownCommandExecuter barrier = new CountDownCommandExecuter(bookRecordList.size(), new Command() {
-        public void execute() {
-          if (alreadyCheckedBookIds.isEmpty()) {
-            SoundUtil.beepOK();
-          } else {
-            SoundUtil.beepNG();
-            com.google.gwt.user.client.Window.alert(alreadyCheckedBookIds + "は既に貸出中となっています。");
-          }
-        }
-      });
-    for (final BookRecord bookRecord: bookRecordList) {
-      RPCServices.getDBLookupService().recordRentalEvent(bookRecord.getId(), personInfo.getRecord().getId(), new AsyncCallback<Boolean>() {
-          public void onSuccess(Boolean ok) {
-            // KOKO
-            if (!ok) alreadyCheckedBookIds.add(bookRecord.getId());
-            barrier.countDown();
-          }
-          public void onFailure(Throwable ex) {
-            SoundUtil.beepNG();
-            com.google.gwt.user.client.Window.alert("Failure: "+ex.toString());
-            barrier.countDown();
-          }
-        });
+    final CountDownCommandExecuter barrier = new CountDownCommandExecuter(bookRecordList.size(),
+            new Command() {
+              public void execute() {
+                if (alreadyCheckedBookIds.isEmpty()) {
+                  SoundUtil.beepOK();
+                } else {
+                  SoundUtil.beepNG();
+                  com.google.gwt.user.client.Window.alert(alreadyCheckedBookIds + "は既に貸出中となっています。");
+                }
+              }
+            });
+    for (final BookRecord bookRecord : bookRecordList) {
+      RPCServices.getDBLookupService().recordRentalEvent(bookRecord.getId(),
+              personInfo.getRecord().getId(), new AsyncCallback<Boolean>() {
+                public void onSuccess(Boolean ok) {
+                  // KOKO
+                  if (!ok)
+                    alreadyCheckedBookIds.add(bookRecord.getId());
+                  barrier.countDown();
+                }
+
+                public void onFailure(Throwable ex) {
+                  SoundUtil.beepNG();
+                  com.google.gwt.user.client.Window.alert("Failure: " + ex.toString());
+                  barrier.countDown();
+                }
+              });
     }
     reset();
   }
 
   /**
-   * HashSet over a single object since Collections.singleton()
-   * returns unserializable object for GWT RPC.
+   * HashSet over a single object since Collections.singleton() returns unserializable object for
+   * GWT RPC.
    */
   static private <T> HashSet<T> singleton(T o) {
     final HashSet<T> set = new HashSet<T>();
@@ -196,9 +214,37 @@ public class KashidashiPanel extends Composite implements LibraryManager.Abstrac
   }
 
   private final class MyChangeListener implements ChangeListener {
+
+    /**
+     * A helper function that displays rental record given user ids.
+     */
+    private void showHistoryForUsers(int[] userIds) {
+      RPCServices.getDBLookupService().getRentalHistoryForUsers(userIds, true,
+              new AsyncCallbackAdapter<List<BookRentalHistoryRecord>>() {
+                public void onSuccess(List<BookRentalHistoryRecord> rentalRecords) {
+                  if (rentalRecords == null) {
+                    return;
+                  }
+                  Collections.sort(rentalRecords, new Comparator<BookRentalHistoryRecord>() {
+                    @Override
+                    public int compare(BookRentalHistoryRecord o1, BookRentalHistoryRecord o2) {
+                      return o1.getCheckoutDate().compareTo(o2.getCheckoutDate());
+                    }
+                  });
+                  for (BookRentalHistoryRecord rentalRecord : rentalRecords) {
+                    bookRecordTable.addRow(new String[] { Integer.toString(rentalRecord.getPersonID()),
+                        rentalRecord.getPersonType().toString(), rentalRecord.getPersonName(),
+                        rentalRecord.getBookID(), rentalRecord.getBookTitle(),
+                        rentalRecord.getCheckoutDate().toString() });
+                  }
+                }
+              });
+    }
+
     public void onChange(Widget sender) {
       final String barCode = ClientStringUtil.normalize(inputBox.getText());
-      if (barCode.length() == 0) return;
+      if (barCode.length() == 0)
+        return;
       inputBox.setText("");
       inputBox.setFocus(true);
       if (SUBMIT_CODE.equals(barCode)) {
@@ -215,77 +261,116 @@ public class KashidashiPanel extends Composite implements LibraryManager.Abstrac
             return;
           }
         }
-        RPCServices.getDBLookupService().lookupUserByID(userId, new AsyncCallbackAdapter<PersonRecord>() {
-            public void onSuccess(PersonRecord record) {
-              if (record == null) {
-                SoundUtil.beepNG();
-                com.google.gwt.user.client.Window.alert("\""+barCode+"\"に該当する利用者は登録されていません。");
-              } else {
-                SoundUtil.beepOK();
-                personInfo.setRecord(record);
-                topLabel.setText(MSG1);
-              }
-            }
-          });
+        // Look up user
+        RPCServices.getDBLookupService().lookupUserByID(userId,
+                new AsyncCallbackAdapter<PersonRecord>() {
+                  public void onSuccess(PersonRecord record) {
+                    if (record == null) {
+                      SoundUtil.beepNG();
+                      com.google.gwt.user.client.Window
+                              .alert("\"" + barCode + "\"に該当する利用者は登録されていません。");
+                    } else {
+                      SoundUtil.beepOK();
+                      personInfo.setRecord(record);
+                      topLabel.setText(MSG1);
+                      bookRecordTable.clear();
+                      if (record.getType() == PersonRecord.Type.PARENTS
+                              || record.getType() == PersonRecord.Type.TEACHER) {
+                        // Show all family members rental history if a parent or teacher is present.
+                        RPCServices.getDBLookupService().findUsersByFamilyId(
+                                new int[] { record.getFamilyId() },
+                                new AsyncCallbackAdapter<List<PersonRecord>>() {
+                                  public void onSuccess(List<PersonRecord> familyMembers) {
+                                    if (familyMembers == null || familyMembers.size() == 0) {
+                                      return;
+                                    }
+                                    int[] userIds = new int[familyMembers.size()];
+                                    for (int i = 0; i < familyMembers.size(); i++) {
+                                      userIds[i] = familyMembers.get(i).getId();
+                                    }
+                                    showHistoryForUsers(userIds);
+                                  }
+                                });
+                      } else {
+                        // Show only student data if a student is present.
+                        showHistoryForUsers(new int[] { record.getId() });
+                      }
+                    }
+                  }
+                });
       } else if (ClientStringUtil.isBookId(barCode)) {
         // this is a book ID.
         logger.info("Book ID: " + barCode);
-        RPCServices.getDBLookupService().lookupBookByID(barCode, new AsyncCallbackAdapter<BookRecord>() {
-              public void onSuccess(final BookRecord record) {
-                if (record == null) {
-                  SoundUtil.beepNG();
-                  com.google.gwt.user.client.Window.alert("IDが\""+barCode+"\"である書籍は登録されていません。");
-                  return;
-                }
-                if (record.getDiscardDate() != null) {
-                  SoundUtil.beepNG();
-                  com.google.gwt.user.client.Window.alert("IDが\""+barCode+"\"である書籍は、廃棄処分されているはずです。");
-                  return;
-                }
-                if (bookRecordList.contains(record)) {
-                  SoundUtil.beepNG();
-                  com.google.gwt.user.client.Window.alert("IDが\""+barCode+"\"である書籍は、すでに貸出リストに含まれています。");
-                  return;
-                }
-                RPCServices.getDBLookupService().getRentalHistoryForBooks(singleton(record.getId()), true, new AsyncCallbackAdapter<List<BookRentalHistoryRecord>>() {
-                      public void onSuccess(List<BookRentalHistoryRecord> checkoutList) {
-                        if (checkoutList.isEmpty()) {
-                          SoundUtil.beepOK();
-                          bookRecordList.add(record);
-                          bookTable.addRow(new String[] {record.getId(),
-                                                         record.getTitle(),
-                                                         record.getAuthors(),
-                                                         record.getPublisher()});
-                          int row = bookTable.getRowCount() - 1;
-                          int numColumns = bookTable.getCellCount(row);
-                          bookTable.setWidget(row, numColumns,
-                              new HyperlinkButton("削除", new ClickListener() {
-                                  public void onClick(Widget sender) {
-                                    for (int j = 0; j < bookRecordList.size(); j++) {
-                                      if (record.getId().equals(bookRecordList.get(j).getId())) {
-                                        bookRecordList.remove(j);
-                                        bookTable.removeRow(j+1);
-                                        break;
-                                      }
+        RPCServices.getDBLookupService().lookupBookByID(barCode,
+                new AsyncCallbackAdapter<BookRecord>() {
+                  public void onSuccess(final BookRecord record) {
+                    if (record == null) {
+                      SoundUtil.beepNG();
+                      com.google.gwt.user.client.Window
+                              .alert("IDが\"" + barCode + "\"である書籍は登録されていません。");
+                      return;
+                    }
+                    if (record.getDiscardDate() != null) {
+                      SoundUtil.beepNG();
+                      com.google.gwt.user.client.Window
+                              .alert("IDが\"" + barCode + "\"である書籍は、廃棄処分されているはずです。");
+                      return;
+                    }
+                    if (bookRecordList.contains(record)) {
+                      SoundUtil.beepNG();
+                      com.google.gwt.user.client.Window
+                              .alert("IDが\"" + barCode + "\"である書籍は、すでに貸出リストに含まれています。");
+                      return;
+                    }
+                    RPCServices.getDBLookupService().getRentalHistoryForBooks(
+                            singleton(record.getId()), true,
+                            new AsyncCallbackAdapter<List<BookRentalHistoryRecord>>() {
+                              public void onSuccess(List<BookRentalHistoryRecord> checkoutList) {
+                                if (checkoutList.isEmpty()) {
+                                  SoundUtil.beepOK();
+                                  bookRecordList.add(record);
+                                  bookTable.addRow(new String[] { record.getId(), record.getTitle(),
+                                      record.getAuthors(), record.getPublisher() });
+                                  int row = bookTable.getRowCount() - 1;
+                                  int numColumns = bookTable.getCellCount(row);
+                                  bookTable.setWidget(row, numColumns,
+                                          new HyperlinkButton("削除", new ClickListener() {
+                                            public void onClick(Widget sender) {
+                                              for (int j = 0; j < bookRecordList.size(); j++) {
+                                                if (record.getId()
+                                                        .equals(bookRecordList.get(j).getId())) {
+                                                  bookRecordList.remove(j);
+                                                  bookTable.removeRow(j + 1);
+                                                  break;
+                                                }
+                                              }
+                                              inputBox.setFocus(true); // restore the focus
+                                            }
+                                          }));
+                                } else {
+                                  for (BookRentalHistoryRecord rentalInfo : checkoutList) {
+                                    if (record.getId().equals(rentalInfo.getBookID())) {
+                                      SoundUtil.beepNG();
+                                      new SimpleDialog("この書籍は既に貸し出されています。", inputBox,
+                                              new HTML("書籍番号: <i>" + record.getId()
+                                                      + "</i><br>タイトル: <i>"
+                                                      + rentalInfo.getBookTitle()
+                                                      + "</i><br>氏名: <i>"
+                                                      + rentalInfo.getPersonName() + " ("
+                                                      + rentalInfo.getPersonType()
+                                                      + ") </i><br>貸出日: <i>"
+                                                      + rentalInfo.getCheckoutDate() + "</i>"))
+                                                              .centerAndShow();
                                     }
-                                    inputBox.setFocus(true);  // restore the focus
                                   }
-                                }));
-                        } else {
-                          for (BookRentalHistoryRecord rentalInfo: checkoutList) {
-                            if (record.getId().equals(rentalInfo.getBookID())) {
-                              SoundUtil.beepNG();
-                              new SimpleDialog("この書籍は既に貸し出されています。", inputBox, new HTML("書籍番号: <i>" + record.getId() + "</i><br>タイトル: <i>"+rentalInfo.getBookTitle()+"</i><br>氏名: <i>"+rentalInfo.getPersonName()+" ("+rentalInfo.getPersonType()+") </i><br>貸出日: <i>"+rentalInfo.getCheckoutDate()+"</i>")).centerAndShow();
-                            }
-                          }
-                        }
-                      }
-                    });
-              }
-            });
+                                }
+                              }
+                            });
+                  }
+                });
       } else {
         SoundUtil.beepNG();
-        com.google.gwt.user.client.Window.alert("\""+barCode+"\"はバーコードIDではありません。");
+        com.google.gwt.user.client.Window.alert("\"" + barCode + "\"はバーコードIDではありません。");
         // TODO: Beep and dismiss after a few second.
       }
     }
@@ -296,31 +381,37 @@ public class KashidashiPanel extends Composite implements LibraryManager.Abstrac
    */
   static private final class PersonInfoPanel extends Composite {
     private final Grid grid = new Grid(2, 2);
+
     private PersonRecord record;
     static {
       Resources.INSTANCE.css().ensureInjected();
     }
+
     public PersonInfoPanel() {
       grid.setStyleName(Resources.INSTANCE.css().personInfo());
       grid.setWidth("60%");
       initWidget(grid);
       reset();
     }
+
     public boolean isEmpty() {
       return record == null;
     }
+
     public void reset() {
       record = null;
       grid.setText(0, 0, "利用者番号:");
       grid.setText(0, 1, "学年:");
       grid.setText(1, 0, "名前:");
     }
+
     public void setRecord(PersonRecord record) {
       this.record = record;
-      grid.setText(0, 0, "利用者番号: "+UserInfoDBPanel.formatPersonId(record.getId()));
-      grid.setText(0, 1, "学年: "+ record.getType());
-      grid.setText(1, 0, "名前: "+ record.getName()+" (" + record.getKatakanaName() + ")");
+      grid.setText(0, 0, "利用者番号: " + UserInfoDBPanel.formatPersonId(record.getId()));
+      grid.setText(0, 1, "学年: " + record.getType());
+      grid.setText(1, 0, "名前: " + record.getName() + " (" + record.getKatakanaName() + ")");
     }
+
     public PersonRecord getRecord() {
       return record;
     }
