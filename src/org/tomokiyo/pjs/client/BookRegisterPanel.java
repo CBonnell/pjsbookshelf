@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.logging.Logger;
 
 /**
- * 図書登録用のパネル。Amazon Web Serviceの検索もする。
+ * 図書登録用のパネル。外部の書籍DBの検索もする。
  *
  * @author  (tomokiyo@gmail.com)
  */
@@ -45,7 +45,7 @@ public class BookRegisterPanel extends Composite implements LibraryManager.Abstr
   private final TextBox authorInputBox = new TextBox();
   private final TextBox publisherInputBox = new TextBox();
   private final Label codeIdLabel = new Label();
-  private final Label amazonCategoriesLabel = new Label();
+  private final Label categoriesLabel = new Label();
   private final Image image = new Image();
 
   public enum Category {
@@ -224,7 +224,7 @@ public class BookRegisterPanel extends Composite implements LibraryManager.Abstr
     HorizontalPanel southPanel = new HorizontalPanel();
     mainPanel.add(southPanel, DockPanel.SOUTH);
     southPanel.add(image);
-    southPanel.add(amazonCategoriesLabel);
+    southPanel.add(categoriesLabel);
     
     titleInputBox.addChangeListener(new ChangeListener() {
         public void onChange(Widget sender) {
@@ -244,9 +244,9 @@ public class BookRegisterPanel extends Composite implements LibraryManager.Abstr
           final String isbn = isbnInputBox.getText();
           if (isbn.length() == 0) return;
           if (titleInputBox.getText().length() == 0) {
-            logger.info("Looking up isbn on Amazon: " + isbn);
-            RPCServices.getAmazonLookupService().lookupByISBN(isbn, new AsyncCallback<AmazonBookInfo>() {
-                  public void onSuccess(AmazonBookInfo bookInfo) {
+            logger.info("Looking up isbn: " + isbn);
+            RPCServices.getOpenDBLookupService().lookupByISBN(isbn, new AsyncCallback<PublicBookInfo>() {
+                  public void onSuccess(PublicBookInfo bookInfo) {
                     if (bookInfo == null) {
                       com.google.gwt.user.client.Window.alert(""+isbn);
                     } else {
@@ -258,7 +258,7 @@ public class BookRegisterPanel extends Composite implements LibraryManager.Abstr
                       publisherInputBox.setText(bookInfo.getPublisher());
                       isbnInputBox.setText(bookInfo.getEAN());
                       if (bookInfo.getCategories().length > 0)
-                        amazonCategoriesLabel.setText("Amazon キーワード: " + join(bookInfo.getCategories(), ", "));
+                        categoriesLabel.setText("キーワード: " + join(bookInfo.getCategories(), ", "));
                       final String imageURL = bookInfo.getMediumImageURL();
                       if (imageURL.trim().length() == 0) {
                         image.setVisible(false);
@@ -302,7 +302,7 @@ public class BookRegisterPanel extends Composite implements LibraryManager.Abstr
     authorInputBox.setText("");
     publisherInputBox.setText("");
     codeIdLabel.setText("");
-    amazonCategoriesLabel.setText("");
+    categoriesLabel.setText("");
     image.setUrl("");
     image.setVisible(false);
     isbnInputBox.setFocus(true);

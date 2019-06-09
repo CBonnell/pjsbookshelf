@@ -14,7 +14,7 @@ import org.xml.sax.helpers.DefaultHandler;
 public class YahooFuriganaService extends RemoteServiceServlet implements KakasiService {
   static private final String APP_ID = ServerUtil.properties.getProperty("yahoo.appid");
 
-  private final SAXParser saxParser = AmazonLookupServiceImpl.createSAXParser();
+  private final SAXParser saxParser = OpenDBLookupServiceImpl.createSAXParser();
 
   public String toKatakana(String text) {
     return JapaneseUtil.hiraganaToKatakana(toHiragana(text));

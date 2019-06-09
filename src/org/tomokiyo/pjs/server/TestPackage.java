@@ -14,7 +14,7 @@ public class TestPackage extends TestCase {
 
   public static Test suite() {
     TestSuite suite = new TestSuite();
-    suite.addTest( TestAmazonLookupServiceImpl.suite() );
+    suite.addTest( TestOpenDBLookupServiceImpl.suite() );
     suite.addTest( TestDBUtil.suite() );
     suite.addTest( TestDateUtil.suite() );
     suite.addTest( TestJapaneseUtil.suite() );

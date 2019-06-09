@@ -22,13 +22,13 @@
   </servlet-mapping>
   
   <servlet>
-    <servlet-name>AmazonRPC</servlet-name>
-    <servlet-class>org.tomokiyo.pjs.server.AmazonLookupServiceImpl</servlet-class>
+    <servlet-name>OpenDBRPC</servlet-name>
+    <servlet-class>org.tomokiyo.pjs.server.OpenDBLookupServiceImpl</servlet-class>
   </servlet>
   
   <servlet-mapping>
-    <servlet-name>AmazonRPC</servlet-name>
-    <url-pattern>/librarymanager/amazonRPCService</url-pattern>
+    <servlet-name>OpenDBRPC</servlet-name>
+    <url-pattern>/librarymanager/openDBRPCService</url-pattern>
   </servlet-mapping>
   
   

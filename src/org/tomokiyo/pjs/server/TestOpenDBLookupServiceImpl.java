@@ -5,16 +5,16 @@ import java.util.*;
 import junit.framework.*;
 
 import javax.xml.parsers.SAXParser;
-import org.tomokiyo.pjs.client.AmazonBookInfo;
+import org.tomokiyo.pjs.client.PublicBookInfo;
 
 /**
- * JUnit test routine for {@link AmazonLookupServiceImpl}.
+ * JUnit test routine for {@link OpenDBLookupServiceImpl}.
  *
  * @author Takashi Tomokiyo (tomokiyo@gmail.com)
  */
-public class TestAmazonLookupServiceImpl extends TestCase {
+public class TestOpenDBLookupServiceImpl extends TestCase {
   /** Creates an instance of the test */
-  public TestAmazonLookupServiceImpl(String name) {
+  public TestOpenDBLookupServiceImpl(String name) {
     super(name);
   }
 
@@ -22,14 +22,14 @@ public class TestAmazonLookupServiceImpl extends TestCase {
    * Test the ContentHandler.
    */
   public void testContentHandler() throws Exception {
-    final ArrayList<AmazonBookInfo> accum = new ArrayList<AmazonBookInfo>();
-    final InputStream inputStream = AmazonLookupServiceImpl.class.getResourceAsStream("tests/AmazonResponse001.xml");
+    final ArrayList<PublicBookInfo> accum = new ArrayList<PublicBookInfo>();
+    final InputStream inputStream = OpenDBLookupServiceImpl.class.getResourceAsStream("tests/AmazonResponse001.xml");
 
     // Parse the test data.
-    final SAXParser parser = AmazonLookupServiceImpl.createSAXParser();
-    parser.parse(inputStream, new AmazonLookupServiceImpl.MyContentHandler(accum));
+    final SAXParser parser = OpenDBLookupServiceImpl.createSAXParser();
+    parser.parse(inputStream, new OpenDBLookupServiceImpl.MyContentHandler(accum));
     assertEquals(1, accum.size());
-    final AmazonBookInfo info = accum.get(0);
+    final PublicBookInfo info = accum.get(0);
     
     assertEquals("CDできくよみきかせおはなし絵本〈1〉", info.getTitle());
     assertEquals("成美堂出版", info.getPublisher());
@@ -49,7 +49,7 @@ public class TestAmazonLookupServiceImpl extends TestCase {
    * common setup
    */
   public static Test suite() {
-    return new TestSuite( TestAmazonLookupServiceImpl.class );
+    return new TestSuite( TestOpenDBLookupServiceImpl.class );
   }
 
   public static void main (String[] args) {

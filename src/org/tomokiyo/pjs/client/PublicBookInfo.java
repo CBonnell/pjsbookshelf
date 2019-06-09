@@ -4,11 +4,11 @@ import com.google.gwt.user.client.rpc.IsSerializable;
 import java.util.ArrayList;
 
 /**
- * Information about a book from Amazon Web Service.
+ * Information about a book from public book database.
  *
  * @author Takashi Tomokiyo (tomokiyo@gmail.com)
  */
-public class AmazonBookInfo implements IsSerializable {
+public class PublicBookInfo implements IsSerializable {
 
   /**
    * The book title.
@@ -51,7 +51,7 @@ public class AmazonBookInfo implements IsSerializable {
   private String largeImageURL;
 
   /**
-   * The list of subjects (= Amazon categories).
+   * The list of subjects (= book categories).
    */
   private ArrayList<String> categories = new ArrayList<String>();
 
