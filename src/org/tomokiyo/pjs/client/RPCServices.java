@@ -39,17 +39,17 @@ class RPCServices {
     }
   }
 
-  static public final AmazonLookupServiceAsync getAmazonLookupService() {
-    return LazyAmazonLookupServiceHolder.service;
+  static public final PublicBookInfoLookupServiceAsync getOpenDBLookupService() {
+    return LazyOpenDBLookupServiceHolder.service;
   }
   
   // Initialize static variable lazily and safely without DCL idiom.
-  static private final class LazyAmazonLookupServiceHolder {
-    static private final AmazonLookupServiceAsync service =
-      (AmazonLookupServiceAsync)GWT.create(AmazonLookupService.class);
+  static private final class LazyOpenDBLookupServiceHolder {
+    static private final PublicBookInfoLookupServiceAsync service =
+      (PublicBookInfoLookupServiceAsync)GWT.create(PublicBookInfoLookupService.class);
     static {
       ((ServiceDefTarget)service).setServiceEntryPoint(
-        GWT.getModuleBaseURL() + "amazonRPCService");
+        GWT.getModuleBaseURL() + "openDBRPCService");
     }
   }
 }

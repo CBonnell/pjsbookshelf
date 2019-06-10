@@ -33,7 +33,7 @@ public class BookRecord implements IsSerializable, Comparable<BookRecord> {
   // ISBN コード
   private String ISBN = "";
 
-  // Amazon image URL.
+  // Thumb nail image URL.
   private String imageURL = "";
 
   // 新規登録日

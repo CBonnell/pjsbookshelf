@@ -18,10 +18,10 @@ public class TestYahooFuriganaService extends TestCase
   }
 
   public void testContentHandler() throws Exception {
-    final InputStream inputStream = AmazonLookupServiceImpl.class.getResourceAsStream("tests/YahooFuriganaResponse001.xml");
+    final InputStream inputStream = OpenDBLookupServiceImpl.class.getResourceAsStream("tests/YahooFuriganaResponse001.xml");
     
     // Parse the test data.
-    final SAXParser parser = AmazonLookupServiceImpl.createSAXParser();
+    final SAXParser parser = OpenDBLookupServiceImpl.createSAXParser();
     YahooFuriganaService.MyContentHandler handler = new YahooFuriganaService.MyContentHandler();
     parser.parse(inputStream, handler);
     assertEquals("はっとりが、はりまちがえたIDにたいして めっせーじをしゅつりょくする", handler.getResult());
