@@ -2,8 +2,12 @@ package org.tomokiyo.pjs.server;
 
 import java.util.*;
 import javax.xml.parsers.SAXParser;
+
+import com.google.gson.Gson;
+
 import junit.framework.*;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 
 /**
  * JUnit test routine for {@link YahooFuriganaService}.
@@ -18,13 +22,21 @@ public class TestYahooFuriganaService extends TestCase
   }
 
   public void testContentHandler() throws Exception {
-    final InputStream inputStream = OpenDBLookupServiceImpl.class.getResourceAsStream("tests/YahooFuriganaResponse001.xml");
-    
+    final InputStream inputStream = OpenDBLookupServiceImpl.class.getResourceAsStream("tests/YahooFuriganaResponse001.json");
+
+    final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      final byte[] buffer = new byte[1024];
+
+      for (int len; (len = inputStream.read(buffer)) != -1; ) {
+        baos.write(buffer, 0, len);
+      }
+
+    final String responseBody = baos.toString(StandardCharsets.UTF_8.name());
+
     // Parse the test data.
-    final SAXParser parser = OpenDBLookupServiceImpl.createSAXParser();
-    YahooFuriganaService.MyContentHandler handler = new YahooFuriganaService.MyContentHandler();
-    parser.parse(inputStream, handler);
-    assertEquals("はっとりが、はりまちがえたIDにたいして めっせーじをしゅつりょくする", handler.getResult());
+    final YahooFuriganaService.Response response = new Gson().fromJson(responseBody, YahooFuriganaService.Response.class);
+
+    assertEquals("はっとりがはりまちがえたデータにたいしてメッセージをしゅつりょくする", response.getResult().toString());
   }
 
   /**
