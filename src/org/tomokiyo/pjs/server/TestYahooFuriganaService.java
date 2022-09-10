@@ -25,11 +25,11 @@ public class TestYahooFuriganaService extends TestCase
     final InputStream inputStream = OpenDBLookupServiceImpl.class.getResourceAsStream("tests/YahooFuriganaResponse001.json");
 
     final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      final byte[] buffer = new byte[1024];
+    final byte[] buffer = new byte[1024];
 
-      for (int len; (len = inputStream.read(buffer)) != -1; ) {
-        baos.write(buffer, 0, len);
-      }
+    for (int len; (len = inputStream.read(buffer)) != -1; ) {
+      baos.write(buffer, 0, len);
+    }
 
     final String responseBody = baos.toString(StandardCharsets.UTF_8.name());
 
