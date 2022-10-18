@@ -248,7 +248,7 @@ public class BookRegisterPanel extends Composite implements LibraryManager.Abstr
             RPCServices.getOpenDBLookupService().lookupByISBN(isbn, new AsyncCallback<PublicBookInfo>() {
                   public void onSuccess(PublicBookInfo bookInfo) {
                     if (bookInfo == null) {
-                      com.google.gwt.user.client.Window.alert(""+isbn);
+                      com.google.gwt.user.client.Window.alert("本の情報が見つかりませんでした。手入力して下さい。");
                     } else {
                       logger.fine(bookInfo.toString());
                       titleInputBox.setText(bookInfo.getTitle());

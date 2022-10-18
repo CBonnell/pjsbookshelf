@@ -8,6 +8,7 @@ import java.io.Reader;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Objects;
 
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
@@ -49,7 +50,7 @@ public class OpenDBLookupServiceImpl extends RemoteServiceServlet implements Pub
         BufferedReader rd = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
         String jsonText = readAll(rd);
         JSONArray jsonarray = new JSONArray(jsonText);
-        return jsonarray.getJSONObject(0);
+        return jsonarray.isNull(0) ? null : jsonarray.getJSONObject(0);
       } finally {
         is.close();
       }
@@ -61,6 +62,11 @@ public class OpenDBLookupServiceImpl extends RemoteServiceServlet implements Pub
       System.out.println("Query: "+url);
       try {
         JSONObject json = readJsonFromUrl(url);
+
+        if (Objects.isNull(json)) {
+          return null;
+        }
+
         bookInfo.setISBN(isbn);      
         bookInfo.setEAN(isbn); // Client側で、ISBNとしてEANを参照しているように見える
         bookInfo.setTitle(((JSONObject)json.get("summary")).get("title").toString());
