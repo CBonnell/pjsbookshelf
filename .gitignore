@@ -5,3 +5,7 @@ gwt-unitCache/
 LibraryManager.war
 TAGS
 /bin/
+PJS-DB/
+dist/data.json
+scripts/20190922_tools_for_toshoiin/results
+scripts/20190922_tools_for_toshoiin/derby.log
